@@ -23,16 +23,35 @@ document.body.appendChild(canvas);
 //movimentos//
 addEventListener("keypress",keyHandler)
 
-//chao do cenario//
-ground = {
-    cor:"#000000",
-    y : 350,
-    size : 50,
-    drawGround : function() {
-        cntx.fillStyle = this.cor;
-        cntx.fillRect(0,this.y,LARGURA,this.size);
-    },
-};
+class Plataform {
+    constructor(){
+        this.cor = "#777777"; 
+        this.positionY = 0;
+        this.positionX = 0
+        this.height = 0;
+        this.width = 0;
+    }
+    drawPlataform(){
+        cntx.fillStyle = this.cor
+        cntx.fillRect(this.positionX,this.positionY,this.width,this.height);  
+    }
+}
+
+//plataforma de chao 
+ground = new Plataform;
+ground.cor = "#000000";
+ground.positionY = 350;
+ground.width = LARGURA;
+ground.height = 50;
+
+plataformTest = new Plataform;
+plataformTest.positionX = 350;
+plataformTest.positionY = 300;
+plataformTest.width = LARGURA;
+plataformTest.height = 30;
+
+
+
 //configuracoes do jogador//
 playerHitBox = {
     altura : 60,
@@ -72,8 +91,8 @@ playerHitBox = {
         this.positionX += this.moveSpeed;
         
         //colisao com chao//
-        if(this.positionY > ground.y - this.altura){
-            this.positionY = ground.y - this.altura;
+        if(this.positionY > ground.positionY - this.altura){
+            this.positionY = ground.positionY - this.altura;
             this.jumpQtd = 0;
         }
         
@@ -122,7 +141,8 @@ function atualiza(){
 function render(){
     cntx.fillStyle = "#9ad1e3";
     cntx.fillRect(0,0,LARGURA,ALTURA);
-    ground.drawGround();
+    ground.drawPlataform();
+    plataformTest.drawPlataform();
     playerHitBox.drawPlayer();
 }
 function roda(){
