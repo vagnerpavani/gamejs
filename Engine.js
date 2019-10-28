@@ -6,6 +6,7 @@ var frames = 0;
 
 var butaoIniciar = document.getElementById("butao");
 
+var plataformasNaTela = [];
 
 //controle do jogador//
 /* 32  -> jump -> space
@@ -23,6 +24,45 @@ document.body.appendChild(canvas);
 //movimentos//
 addEventListener("keypress",keyHandler)
 
+class CollisionTest {
+    constructor(a,b) {
+        const A = a.getPosition()
+        const B = b.getPosition()
+
+        console.log(A,B)
+
+        // Parte inferior de B acima da parte superior de A
+        // Parte superior de B acima da parte inferior de A
+        const B_ABOVE_A = B.yEnd >= A.y && B.y <= A.yEnd
+
+        // Parte superior de B abaixo da parte inferior de A
+        // Parte inferior de B abaixo da parte superior de A
+        const B_UNDER_A = B.y >= A.yEnd && B.yEnd <= A.y
+
+        const verticalTest = B_ABOVE_A || B_UNDER_A
+
+        // Mesma logica do teste vertical
+        const B_BEFORE_A = B.xEnd >= A.x && B.x <= A.xEnd 
+        const B_AFTER_A = B.x >= A.xEnd && B.xEnd <= A.x 
+
+        const horizontalTest = B_BEFORE_A || B_AFTER_A
+
+        this.isColliding = function() {
+            return verticalTest && horizontalTest
+        }
+
+        this.isCollidingFrom = function () {
+            return {
+                above : B_ABOVE_A,
+                below : B_UNDER_A ,
+                left : B_BEFORE_A && B.x <= A.x,
+                right : B_AFTER_A && B.xEnd <= A.xEnd
+            }
+        }
+
+    }
+}
+
 class Plataform {
     constructor(){
         this.cor = "#777777"; 
@@ -35,6 +75,14 @@ class Plataform {
         cntx.fillStyle = this.cor
         cntx.fillRect(this.positionX,this.positionY,this.width,this.height);  
     }
+    getPosition() {
+        return {
+            x : this.positionX,
+            y : this.positionY,
+            xEnd : this.positionX + this.width,
+            yEnd : this.positionY + this.height
+        }
+    }
 }
 
 //plataforma de chao 
@@ -44,30 +92,40 @@ ground.positionY = 350;
 ground.width = LARGURA;
 ground.height = 50;
 
+plataformasNaTela.push(ground);
+
 plataformTest = new Plataform;
 plataformTest.positionX = 350;
-plataformTest.positionY = 300;
+plataformTest.positionY = 250;
 plataformTest.width = LARGURA;
 plataformTest.height = 30;
 
-
+plataformasNaTela.push(plataformTest);
 
 //configuracoes do jogador//
 playerHitBox = {
-    altura : 60,
-    largura : 40,
+    height : 60,
+    width : 40,
     positionX : 50,
     positionY : 50,
     moveSpeed : 0,
     aceleration : 0,
     verticalSpeed : 0,
-    jumpForce : 15,
+    jumpForce : 10,
     jumpQtd : 0,
-    gravity : 1,
+    gravity : 0.5,
+    getPosition: function() {
+        return {
+            x : this.positionX,
+            y : this.positionY,
+            xEnd : this.positionX + this.width,
+            yEnd : this.positionY + this.height
+        }
+    },
     updatePlayerStatus : function(){
         //acao da gravidade
         this.verticalSpeed += this.gravity;
-        this.positionY += this.verticalSpeed;
+        
         //desacelera o player
         if(this.aceleration < 0){
             this.aceleration += 0.5;
@@ -87,36 +145,56 @@ playerHitBox = {
             this.aceleration = 1;
             this.moveSpeed = -4;
         }
-        //movendo o player
+
+        plataformasNaTela
+            .map((platform) => new CollisionTest(platform,this)) // Gera um CollisionTest para cada plataforma
+            .filter((ct) => ct.isColliding()) // Pega só os testes com colisão
+        .forEach((ct) => {  // Aplica cada colisão individualmente na velocidade do player
+            const from = ct.isCollidingFrom()
+            console.log("c -> from", from, "vSpd", this.verticalSpeed, "mSpd", this.moveSpeed)
+
+            if  ( from.above && this.verticalSpeed > 0 ) { 
+                this.verticalSpeed = 0;
+            }
+            if  ( from.below && this.verticalSpeed < 0 ) { 
+                // Nao alterar a velocidade se o player colidir de baixo para cima com a plataforma
+            }
+            if  ( from.left && this.moveSpeed < 0 ) { 
+                //this.moveSpeed = this.moveSpeed * -1
+            }
+            if  ( from.right && this.moveSpeed > 0 ) { 
+                //this.moveSpeed = this.moveSpeed * -1
+            }
+        })
+
+        //movendo o player (importante que seja por ultimo para validar as colisões antes)
+        this.positionY += this.verticalSpeed;
         this.positionX += this.moveSpeed;
-        
-        //colisao com chao//
-        if(this.positionY > ground.positionY - this.altura){
-            this.positionY = ground.positionY - this.altura;
-            this.jumpQtd = 0;
-        }
-        
+
     },
+
     movePlayerLeft : function() {
         this.aceleration += 1;
         this.moveSpeed -=  this.aceleration; 
     },
+
     movePlayerRight : function() {
         this.aceleration += 1;
         this.moveSpeed +=  this.aceleration;
     },
+
     playerJump : function(){
-        if(this.jumpQtd < 2){
+        if(this.jumpQtd < 10){
             this.verticalSpeed = - this.jumpForce;
             this.jumpQtd++;
         }
     },
+
     drawPlayer : function(){
         cntx.fillStyle = "#e80e0e";
-        cntx.fillRect(this.positionX,this.positionY,this.largura,this.altura);
-    }    
+        cntx.fillRect(this.positionX,this.positionY,this.width,this.height);
+    },
 };
-
 
 
 //funcao que avalia a tecla apertada e chama a acao correspondente//
@@ -134,10 +212,12 @@ function keyHandler(element){
             return
     }
 }
+
 function atualiza(){
     frames++;
     playerHitBox.updatePlayerStatus();
 }
+
 function render(){
     cntx.fillStyle = "#9ad1e3";
     cntx.fillRect(0,0,LARGURA,ALTURA);
@@ -145,6 +225,7 @@ function render(){
     plataformTest.drawPlataform();
     playerHitBox.drawPlayer();
 }
+
 function roda(){
     butaoIniciar.style.display = "none";
     atualiza();
