@@ -142,9 +142,16 @@ plataformTest.positionY = 300;
 plataformTest.width = LARGURA/4;
 plataformTest.height = 30;
 
-[new Plataform(50,200,400,30), 
+const leftWall = new Plataform(0, 0, ALTURA, 5)
+const rightWall = new Plataform(LARGURA - 5, 0, ALTURA, 5)
+
+
+
+const plats = [leftWall, rightWall,
+new Plataform(50,200,400,30), 
  new Plataform(200,200,400,30), 
  plataformTest, 
+ new Plataform(350,100, 30, LARGURA/4),
  ground]
 .forEach( (x) => plataformasNaTela.push(x) )
 
@@ -189,7 +196,7 @@ playerHitBox = {
             .filter((ct) => ct.isColliding()) // Pega só os testes com colisão
         .forEach((ct) => {  // Aplica cada colisão individualmente na velocidade do player
             const from = ct.isCollidingFrom()
-            console.log("c -> from", from, "vSpd", this.verticalSpeed, "mSpd", this.moveSpeed, "offset", ct.offset(), ct.counterOffset())
+            //console.log("c -> from", from, "vSpd", this.verticalSpeed, "mSpd", this.moveSpeed, "offset", ct.offset(), ct.counterOffset())
 
             if  ( from.above && this.verticalSpeed > 0 ) { 
                 this.verticalSpeed = 0;
